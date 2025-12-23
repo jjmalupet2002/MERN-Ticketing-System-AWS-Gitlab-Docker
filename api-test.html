@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticketing System API Tester</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: auto;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            border: 1px solid #eef;
+        }
+
+        input,
+        button,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #357abd;
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            overflow-x: auto;
+            border-radius: 8px;
+            font-size: 13px;
+            min-height: 50px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #4a90e2;
+            font-size: 1.25rem;
+            border-bottom: 2px solid #f0f7ff;
+            padding-bottom: 10px;
+        }
+
+        .info {
+            background: #e7f3ff;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            border-left: 4px solid #4a90e2;
+        }
+
+        code {
+            background: #eee;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>API Diagnostic Tool</h1>
+
+    <div class="info">
+        <strong>Note:</strong> Browsers perform a <code>GET</code> when you type a URL in the address bar. Since our
+        registration endpoint only allows <code>POST</code>, you will see <em>"Cannot GET /api/users"</em> if you visit
+        it directly. Use this tool instead.
+    </div>
+
+    <div class="card">
+        <h2>1. Register User (POST /api/users)</h2>
+        <input type="text" id="regName" placeholder="Full Name" value="Test User">
+        <input type="email" id="regEmail" placeholder="Email Address" value="test@example.com">
+        <input type="password" id="regPass" placeholder="Password" value="password123">
+        <button onclick="apiCall('/api/users', 'POST')">Register User</button>
+    </div>
+
+    <div class="card">
+        <h2>2. Get Profile (GET /api/users/me)</h2>
+        <p>Token Status: <span id="tokenStatus">🔴 Missing Token</span></p>
+        <button onclick="apiCall('/api/users/me', 'GET', true)">Fetch My Profile</button>
+    </div>
+
+    <div class="card">
+        <h2>API Response</h2>
+        <pre id="output">Results will appear here...</pre>
+    </div>
+
+    <script>
+        let authToken = '';
+        const BASE_URL = 'http://localhost:5000';
+
+        async function apiCall(endpoint, method, needsAuth = false) {
+            const output = document.getElementById('output');
+            output.textContent = 'Processing...';
+
+            const headers = { 'Content-Type': 'application/json' };
+            if (needsAuth) {
+                if (!authToken) {
+                    output.textContent = 'Error: No token found. Register or login first.';
+                    return;
+                }
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            let body = null;
+            if (method === 'POST') {
+                body = JSON.stringify({
+                    name: document.getElementById('regName').value,
+                    email: document.getElementById('regEmail').value,
+                    password: document.getElementById('regPass').value
+                });
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}${endpoint}`, {
+                    method,
+                    headers,
+                    body
+                });
+                const data = await response.json();
+                output.textContent = JSON.stringify(data, null, 2);
+
+                if (data.token) {
+                    authToken = data.token;
+                    document.getElementById('tokenStatus').textContent = '✅ Token Loaded';
+                    document.getElementById('tokenStatus').style.color = 'green';
+                }
+            } catch (err) {
+                output.textContent = 'Connection Error: ' + err.message + '\n\nIs the backend running at http://localhost:5000?';
+            }
+        }
+    </script>
+</body>
+
+</html>
