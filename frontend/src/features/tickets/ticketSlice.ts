@@ -31,6 +31,9 @@ export interface Ticket {
     description: string;
     product: string;
     status: string;
+    priority: 'low' | 'medium' | 'high';
+    tags: string[];
+    attachments: { filename: string; originalName: string; uploadedAt: string }[];
     notes: Note[];
     createdAt: string;
     updatedAt: string;

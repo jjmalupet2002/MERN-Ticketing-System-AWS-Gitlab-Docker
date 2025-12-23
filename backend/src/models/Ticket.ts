@@ -14,6 +14,9 @@ export interface ITicket extends Document {
     title: string;
     description: string;
     status: 'new' | 'open' | 'closed';
+    priority: 'low' | 'medium' | 'high';
+    tags: string[];
+    attachments: { filename: string; originalName: string; uploadedAt: Date }[];
     notes: INote[];
 }
 
@@ -47,6 +50,29 @@ const ticketSchema = new Schema({
         enum: ['new', 'open', 'closed'],
         default: 'new',
     },
+    priority: {
+        type: String,
+        enum: ['low', 'medium', 'high'],
+        default: 'medium',
+    },
+    tags: {
+        type: [String],
+        default: [],
+    },
+    attachments: [{
+        filename: {
+            type: String,
+            required: true,
+        },
+        originalName: {
+            type: String,
+            required: true,
+        },
+        uploadedAt: {
+            type: Date,
+            default: Date.now,
+        },
+    }],
     notes: [{
         author: {
             type: mongoose.Schema.Types.ObjectId,

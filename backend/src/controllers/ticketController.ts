@@ -29,17 +29,27 @@ export const getAllTickets = async (req: AuthRequest, res: Response) => {
 // @route   POST /api/tickets
 // @access  Private
 export const createTicket = async (req: AuthRequest, res: Response) => {
-    const { product, description, title } = req.body;
+    const { product, description, title, priority, tags } = req.body;
 
     if (!product || !description || !title) {
         res.status(400).json({ message: 'Please add a product, title and description' });
         return;
     }
 
+    // Handle file attachments if present
+    const attachments = (req.files as Express.Multer.File[])?.map(file => ({
+        filename: file.filename,
+        originalName: file.originalname,
+        uploadedAt: new Date(),
+    })) || [];
+
     const ticket = await Ticket.create({
         product,
         description,
         title,
+        priority: priority || 'medium',
+        tags: tags ? (Array.isArray(tags) ? tags : [tags]) : [],
+        attachments,
         user: req.user?._id,
     });
 

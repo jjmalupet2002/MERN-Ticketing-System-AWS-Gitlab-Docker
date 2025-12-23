@@ -69,13 +69,25 @@ function Ticket() {
                 <div className='p-8 border-b border-gray-200'>
                     <div className='flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4'>
                         <div className='flex-1'>
-                            <div className='flex items-center gap-3 mb-2'>
+                            <div className='flex items-center gap-3 mb-2 flex-wrap'>
                                 <h1 className='text-2xl font-bold text-gray-900'>
                                     Ticket #{ticket?._id.slice(-8).toUpperCase()}
                                 </h1>
                                 <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-bold border ${getStatusClasses(ticket?.status)}`}>
                                     {ticket?.status?.toUpperCase()}
                                 </span>
+                                {ticket?.tags && ticket.tags.length > 0 && (
+                                    <div className='flex gap-2 flex-wrap'>
+                                        {ticket.tags.map((tag: string, index: number) => (
+                                            <span
+                                                key={index}
+                                                className='inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200'
+                                            >
+                                                🏷️ {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <p className='text-sm text-gray-500'>
                                 Submitted on {ticket?.createdAt ? new Date(ticket.createdAt).toLocaleString('en-US', {
@@ -138,6 +150,54 @@ function Ticket() {
                         <label className='block text-sm font-semibold text-gray-600 mb-2'>Title</label>
                         <p className='text-lg font-medium text-gray-900'>{ticket?.title}</p>
                     </div>
+
+                    {/* Attachments Section */}
+                    {ticket?.attachments && ticket.attachments.length > 0 && (
+                        <div className='mb-6'>
+                            <label className='block text-sm font-semibold text-gray-600 mb-3'>Attachments</label>
+                            <div className='bg-gray-50 p-4 rounded-lg border border-gray-200'>
+                                <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                                    {ticket.attachments.map((attachment: any, index: number) => {
+                                        const fileExt = attachment.originalName.split('.').pop()?.toLowerCase();
+                                        const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(fileExt || '');
+
+                                        return (
+                                            <a
+                                                key={index}
+                                                href={`http://localhost:5000/uploads/${attachment.filename}`}
+                                                target='_blank'
+                                                rel='noopener noreferrer'
+                                                className='flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition group'
+                                            >
+                                                <div className='flex-shrink-0'>
+                                                    {isImage ? (
+                                                        <span className='text-2xl'>🖼️</span>
+                                                    ) : fileExt === 'pdf' ? (
+                                                        <span className='text-2xl'>📄</span>
+                                                    ) : fileExt === 'docx' ? (
+                                                        <span className='text-2xl'>📝</span>
+                                                    ) : (
+                                                        <span className='text-2xl'>📎</span>
+                                                    )}
+                                                </div>
+                                                <div className='flex-1 min-w-0'>
+                                                    <p className='text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600'>
+                                                        {attachment.originalName}
+                                                    </p>
+                                                    <p className='text-xs text-gray-500'>
+                                                        Uploaded {new Date(attachment.uploadedAt).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                                <div className='flex-shrink-0'>
+                                                    <span className='text-blue-600 group-hover:text-blue-700'>↗</span>
+                                                </div>
+                                            </a>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Description Section */}
                     <div className='mb-8'>
