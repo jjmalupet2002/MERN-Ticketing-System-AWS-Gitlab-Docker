@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { useSelector, useDispatch } from 'react-redux';
-import { getTicket, closeTicket } from '../features/tickets/ticketSlice';
+import { getTicket, closeTicket, addNote } from '../features/tickets/ticketSlice';
 import { useParams, useNavigate } from 'react-router-dom';
 import BackButton from '../components/BackButton';
 import Spinner from '../components/Spinner';
@@ -149,37 +149,87 @@ function Ticket() {
                         </div>
                     </div>
 
-                    {/* Notes Section - Future-Proofing */}
+                    {/* Notes Section - Chat Thread */}
                     <div className='border-t border-gray-200 pt-8'>
-                        <h2 className='text-lg font-bold text-gray-900 mb-4'>Notes & Updates</h2>
+                        <h2 className='text-lg font-bold text-gray-900 mb-6'>Conversation</h2>
 
-                        <div className='bg-gray-50 border border-gray-200 rounded-lg p-8 text-center'>
-                            <div className='text-gray-400 mb-4'>
-                                <svg className='mx-auto h-12 w-12' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z' />
-                                </svg>
-                            </div>
-                            <p className='text-gray-500 font-medium mb-2'>No notes yet</p>
-                            <p className='text-sm text-gray-400'>Updates and replies will appear here</p>
+                        {/* Notes Thread */}
+                        <div className='space-y-4 mb-6'>
+                            {ticket?.notes && ticket.notes.length > 0 ? (
+                                ticket.notes.map((note, index) => {
+                                    const isAgent = note.role === 'agent' || note.role === 'admin';
+                                    return (
+                                        <div
+                                            key={index}
+                                            className={`flex ${isAgent ? 'justify-start' : 'justify-end'}`}
+                                        >
+                                            <div className={`max-w-[75%] ${isAgent ? 'bg-blue-50 border-blue-200' : 'bg-gray-100 border-gray-200'} border rounded-lg p-4`}>
+                                                <div className='flex items-center gap-2 mb-2'>
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${isAgent ? 'bg-blue-600 text-white' : 'bg-gray-600 text-white'
+                                                        }`}>
+                                                        {isAgent ? '🛡️ Agent' : '👤 You'}
+                                                    </span>
+                                                    <span className='text-xs font-semibold text-gray-700'>
+                                                        {note.author?.name || 'Unknown'}
+                                                    </span>
+                                                    <span className='text-xs text-gray-500'>
+                                                        {new Date(note.createdAt).toLocaleString()}
+                                                    </span>
+                                                </div>
+                                                <p className='text-gray-800 leading-relaxed whitespace-pre-wrap'>
+                                                    {note.content}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className='bg-gray-50 border border-gray-200 rounded-lg p-8 text-center'>
+                                    <div className='text-gray-400 mb-4'>
+                                        <svg className='mx-auto h-12 w-12' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z' />
+                                        </svg>
+                                    </div>
+                                    <p className='text-gray-500 font-medium mb-2'>No messages yet</p>
+                                    <p className='text-sm text-gray-400'>Start the conversation by adding a reply below</p>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Placeholder for future reply functionality */}
+                        {/* Add Reply Form */}
                         {ticket?.status !== 'closed' && (
-                            <div className='mt-6'>
+                            <form onSubmit={(e) => {
+                                e.preventDefault();
+                                const form = e.currentTarget;
+                                const formData = new FormData(form);
+                                const content = formData.get('content') as string;
+                                if (content.trim() && ticketId) {
+                                    dispatch(addNote({ ticketId, content }))
+                                        .unwrap()
+                                        .then(() => {
+                                            dispatch(getTicket(ticketId));
+                                            form.reset();
+                                        })
+                                        .catch((error) => {
+                                            toast.error(error || 'Failed to add note');
+                                        });
+                                }
+                            }}>
                                 <label className='block text-sm font-semibold text-gray-600 mb-2'>Add a Reply</label>
                                 <textarea
+                                    name='content'
                                     className='w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none'
                                     rows={4}
-                                    placeholder='Type your message here... (Coming soon)'
-                                    disabled
+                                    placeholder='Type your message here...'
+                                    required
                                 ></textarea>
                                 <button
-                                    className='mt-3 bg-gray-300 text-gray-500 px-6 py-2 rounded-lg font-semibold cursor-not-allowed'
-                                    disabled
+                                    type='submit'
+                                    className='mt-3 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-md'
                                 >
-                                    Send Reply (Coming Soon)
+                                    Send Reply
                                 </button>
-                            </div>
+                            </form>
                         )}
                     </div>
                 </div>

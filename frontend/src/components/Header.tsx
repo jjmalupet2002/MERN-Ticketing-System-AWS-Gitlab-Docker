@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout, reset } from '../features/auth/authSlice';
 import type { RootState, AppDispatch } from '../app/store';
+import NotificationDropdown from './NotificationDropdown';
 
 function Header() {
     const navigate = useNavigate();
@@ -26,6 +27,9 @@ function Header() {
                         <>
                             <li className='mr-4 font-bold'>
                                 Hello, {user.name}
+                            </li>
+                            <li>
+                                <NotificationDropdown />
                             </li>
                             <li>
                                 <button className='flex items-center space-x-1 btn bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded transition' onClick={onLogout}>

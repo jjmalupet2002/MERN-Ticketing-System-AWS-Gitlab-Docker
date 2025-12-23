@@ -2,6 +2,19 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import type { RootState } from '../../app/store';
 
+export interface Note {
+    _id?: string;
+    author: {
+        _id: string;
+        name: string;
+        email: string;
+        role: string;
+    };
+    role: string;
+    content: string;
+    createdAt: string;
+}
+
 export interface Ticket {
     _id: string;
     user: {
@@ -18,6 +31,7 @@ export interface Ticket {
     description: string;
     product: string;
     status: string;
+    notes: Note[];
     createdAt: string;
     updatedAt: string;
 }
@@ -224,3 +238,38 @@ export const ticketSlice = createSlice({
 
 export const { reset } = ticketSlice.actions;
 export default ticketSlice.reducer;
+
+// Add note to ticket
+export const addNote = createAsyncThunk('tickets/addNote', async ({ ticketId, content }: { ticketId: string; content: string }, thunkAPI) => {
+    try {
+        const token = (thunkAPI.getState() as RootState).auth.user?.token;
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        };
+        const response = await axios.post(`${API_URL}${ticketId}/notes`, { content }, config);
+        return response.data;
+    } catch (error: any) {
+        const message = error.response?.data?.message || error.message || error.toString();
+        return thunkAPI.rejectWithValue(message);
+    }
+});
+
+// Get notes for a ticket
+export const getNotes = createAsyncThunk('tickets/getNotes', async (ticketId: string, thunkAPI) => {
+    try {
+        const token = (thunkAPI.getState() as RootState).auth.user?.token;
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        };
+        const response = await axios.get(`${API_URL}${ticketId}/notes`, config);
+        return response.data;
+    } catch (error: any) {
+        const message = error.response?.data?.message || error.message || error.toString();
+        return thunkAPI.rejectWithValue(message);
+    }
+});
+

@@ -1,14 +1,17 @@
 import { Response } from 'express';
-import Note from '../models/Note';
 import Ticket from '../models/Ticket';
+import User from '../models/User';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { createNotification } from './notificationController';
+import { sendEmail, emailTemplates } from '../utils/emailUtility';
 
 // @desc    Get notes for a ticket
 // @route   GET /api/tickets/:ticketId/notes
 // @access  Private
 export const getNotes = async (req: AuthRequest, res: Response) => {
     try {
-        const ticket = await Ticket.findById(req.params.ticketId);
+        const ticket = await Ticket.findById(req.params.ticketId)
+            .populate('notes.author', 'name email role');
 
         if (!ticket) {
             res.status(404).json({ message: 'Ticket not found' });
@@ -24,11 +27,7 @@ export const getNotes = async (req: AuthRequest, res: Response) => {
             return;
         }
 
-        const notes = await Note.find({ ticket: req.params.ticketId })
-            .populate('user', 'name email role')
-            .sort({ createdAt: 1 });
-
-        res.status(200).json(notes);
+        res.status(200).json(ticket.notes);
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
@@ -39,14 +38,16 @@ export const getNotes = async (req: AuthRequest, res: Response) => {
 // @access  Private
 export const addNote = async (req: AuthRequest, res: Response) => {
     try {
-        const { text } = req.body;
+        const { content } = req.body;
 
-        if (!text) {
-            res.status(400).json({ message: 'Please add text to the note' });
+        if (!content) {
+            res.status(400).json({ message: 'Please add content to the note' });
             return;
         }
 
-        const ticket = await Ticket.findById(req.params.ticketId);
+        const ticket = await Ticket.findById(req.params.ticketId)
+            .populate('user', 'name email')
+            .populate('assignedTo', 'name email');
 
         if (!ticket) {
             res.status(404).json({ message: 'Ticket not found' });
@@ -54,7 +55,7 @@ export const addNote = async (req: AuthRequest, res: Response) => {
         }
 
         // Check if user owns the ticket or is agent/admin
-        const isOwner = ticket.user.toString() === req.user!._id.toString();
+        const isOwner = (ticket.user as any)._id.toString() === req.user!._id.toString();
         const isStaff = req.user!.role === 'agent' || req.user!.role === 'admin';
 
         if (!isOwner && !isStaff) {
@@ -62,18 +63,68 @@ export const addNote = async (req: AuthRequest, res: Response) => {
             return;
         }
 
-        const note = await Note.create({
-            ticket: req.params.ticketId,
-            user: req.user!._id,
-            text,
-            isStaffNote: isStaff,
-        });
+        // Add the note to the ticket's notes array
+        const note = {
+            author: req.user!._id,
+            role: req.user!.role,
+            content,
+            createdAt: new Date(),
+        };
 
-        // Populate user info before returning
-        await note.populate('user', 'name email role');
+        ticket.notes.push(note);
+        await ticket.save();
 
-        res.status(201).json(note);
+        // Populate the newly added note's author
+        await ticket.populate('notes.author', 'name email role');
+
+        // Create notification and send email
+        // If agent/admin replied, notify the ticket owner
+        // If user replied, notify the assigned agent
+        if (isStaff && ticket.user) {
+            const ticketOwner = ticket.user as any;
+            await createNotification(
+                ticketOwner._id,
+                ticket._id,
+                'REPLY',
+                `${req.user!.name} replied to your ticket: ${ticket.title}`
+            );
+
+            // Send email to ticket owner
+            await sendEmail({
+                to: ticketOwner.email,
+                subject: `New reply on ticket #${ticket._id.toString().slice(-6).toUpperCase()}`,
+                html: emailTemplates.ticketReply(
+                    ticket._id.toString().slice(-6).toUpperCase(),
+                    ticket.title,
+                    req.user!.name,
+                    content
+                ),
+            });
+        } else if (!isStaff && ticket.assignedTo) {
+            const assignedAgent = ticket.assignedTo as any;
+            await createNotification(
+                assignedAgent._id,
+                ticket._id,
+                'REPLY',
+                `${req.user!.name} replied to ticket: ${ticket.title}`
+            );
+
+            // Send email to assigned agent
+            await sendEmail({
+                to: assignedAgent.email,
+                subject: `New reply on ticket #${ticket._id.toString().slice(-6).toUpperCase()}`,
+                html: emailTemplates.ticketReply(
+                    ticket._id.toString().slice(-6).toUpperCase(),
+                    ticket.title,
+                    req.user!.name,
+                    content
+                ),
+            });
+        }
+
+        res.status(201).json(ticket.notes[ticket.notes.length - 1]);
     } catch (error) {
+        console.error('Error adding note:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
