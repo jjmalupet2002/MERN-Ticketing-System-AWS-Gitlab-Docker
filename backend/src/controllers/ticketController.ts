@@ -17,6 +17,7 @@ export const getAllTickets = async (req: AuthRequest, res: Response) => {
     try {
         const tickets = await Ticket.find({})
             .populate('user', 'name email')
+            .populate('assignedTo', 'name email')
             .sort({ createdAt: -1 });
         res.status(200).json(tickets);
     } catch (error) {
@@ -31,17 +32,16 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
     const { product, description, title } = req.body;
 
     if (!product || !description || !title) {
-        res.status(400).json({ message: 'Please add a product, description and title' });
+        res.status(400).json({ message: 'Please add a product, title and description' });
         return;
     }
 
     const ticket = await Ticket.create({
         product,
-        title,
         description,
+        title,
         user: req.user?._id,
-        status: 'new',
-    } as any);
+    });
 
     res.status(201).json(ticket);
 };
@@ -51,7 +51,9 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
 // @access  Private
 export const getTicket = async (req: AuthRequest, res: Response) => {
     try {
-        const ticket = await Ticket.findById(req.params.id).populate('user', 'name email');
+        const ticket = await Ticket.findById(req.params.id)
+            .populate('user', 'name email')
+            .populate('assignedTo', 'name email');
 
         if (!ticket) {
             res.status(404).json({ message: 'Ticket not found' });

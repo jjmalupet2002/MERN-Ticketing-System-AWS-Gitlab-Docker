@@ -8,6 +8,7 @@ import Spinner from '../components/Spinner';
 import type { RootState, AppDispatch } from '../app/store';
 
 function Ticket() {
+    const { user } = useSelector((state: RootState) => state.auth);
     const { ticket, isLoading, isError, message } = useSelector(
         (state: RootState) => state.ticket
     );
@@ -44,6 +45,9 @@ function Ticket() {
         return <h3>Something Went Wrong</h3>;
     }
 
+    // Determine back URL based on role
+    const backUrl = user?.role === 'agent' || user?.role === 'admin' ? '/' : '/tickets';
+
     // Helper function to get status color classes
     const getStatusClasses = (status?: string) => {
         switch (status) {
@@ -58,7 +62,7 @@ function Ticket() {
 
     return (
         <div className='container mx-auto px-4 py-8'>
-            <BackButton url='/tickets' />
+            <BackButton url={backUrl} />
 
             <div className='max-w-4xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm'>
                 {/* Header Section */}
@@ -94,21 +98,36 @@ function Ticket() {
 
                 {/* Details Grid */}
                 <div className='p-8'>
-                    <h2 className='text-lg font-bold text-gray-900 mb-6'>Ticket Details</h2>
+                    <h2 className='text-lg font-bold text-gray-900 mb-6'>Ticket Information</h2>
 
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mb-8'>
+                    <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8'>
                         {/* Product */}
                         <div className='bg-gray-50 p-4 rounded-lg border border-gray-200'>
-                            <label className='block text-sm font-semibold text-gray-600 mb-2'>Product</label>
-                            <p className='text-base font-medium text-gray-900'>{ticket?.product}</p>
+                            <label className='block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2'>Product</label>
+                            <p className='text-base font-semibold text-gray-900'>{ticket?.product}</p>
                         </div>
 
-                        {/* Priority - Placeholder for future implementation */}
+                        {/* Assigned Agent */}
                         <div className='bg-gray-50 p-4 rounded-lg border border-gray-200'>
-                            <label className='block text-sm font-semibold text-gray-600 mb-2'>Priority</label>
-                            <p className='text-base font-medium text-gray-900'>
-                                <span className='inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800'>
-                                    Medium
+                            <label className='block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2'>Assigned Agent</label>
+                            <p className='text-base font-semibold text-gray-900'>
+                                {ticket?.assignedTo ? (
+                                    <span className="flex items-center gap-2">
+                                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                        {ticket.assignedTo.name}
+                                    </span>
+                                ) : (
+                                    <span className="text-gray-400 italic">Unassigned</span>
+                                )}
+                            </p>
+                        </div>
+
+                        {/* Status */}
+                        <div className='bg-gray-50 p-4 rounded-lg border border-gray-200'>
+                            <label className='block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2'>Category</label>
+                            <p className='text-base font-semibold text-gray-900'>
+                                <span className='inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600'>
+                                    Technical Support
                                 </span>
                             </p>
                         </div>

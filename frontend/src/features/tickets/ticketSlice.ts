@@ -4,6 +4,16 @@ import type { RootState } from '../../app/store';
 
 export interface Ticket {
     _id: string;
+    user: {
+        _id: string;
+        name: string;
+        email: string;
+    };
+    assignedTo?: {
+        _id: string;
+        name: string;
+        email: string;
+    };
     title: string;
     description: string;
     product: string;
@@ -66,6 +76,23 @@ export const getTickets = createAsyncThunk('tickets/getAll', async (_, thunkAPI)
     }
 });
 
+// Get ALL tickets (Agents/Admins)
+export const getAllTickets = createAsyncThunk('tickets/getAllStaff', async (_, thunkAPI) => {
+    try {
+        const token = (thunkAPI.getState() as RootState).auth.user?.token;
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        };
+        const response = await axios.get(API_URL + 'all', config);
+        return response.data;
+    } catch (error: any) {
+        const message = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
+        return thunkAPI.rejectWithValue(message);
+    }
+});
+
 // Get user ticket
 export const getTicket = createAsyncThunk('tickets/get', async (ticketId: string, thunkAPI) => {
     try {
@@ -93,6 +120,24 @@ export const closeTicket = createAsyncThunk('tickets/close', async (ticketId: st
             },
         };
         const response = await axios.put(API_URL + ticketId, { status: 'closed' }, config);
+        return response.data;
+    } catch (error: any) {
+        const message = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
+        return thunkAPI.rejectWithValue(message);
+    }
+});
+
+// Claim ticket
+export const claimTicket = createAsyncThunk('tickets/claim', async (ticketId: string, thunkAPI) => {
+    try {
+        const token = (thunkAPI.getState() as RootState).auth.user?.token;
+        const userId = (thunkAPI.getState() as RootState).auth.user?._id;
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        };
+        const response = await axios.put(API_URL + ticketId, { assignedTo: userId, status: 'open' }, config);
         return response.data;
     } catch (error: any) {
         const message = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
@@ -133,6 +178,19 @@ export const ticketSlice = createSlice({
                 state.isError = true;
                 state.message = action.payload as string;
             })
+            .addCase(getAllTickets.pending, (state) => {
+                state.isLoading = true;
+            })
+            .addCase(getAllTickets.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.isSuccess = true;
+                state.tickets = action.payload;
+            })
+            .addCase(getAllTickets.rejected, (state, action) => {
+                state.isLoading = false;
+                state.isError = true;
+                state.message = action.payload as string;
+            })
             .addCase(getTicket.pending, (state) => {
                 state.isLoading = true;
             })
@@ -148,8 +206,17 @@ export const ticketSlice = createSlice({
             })
             .addCase(closeTicket.fulfilled, (state, action) => {
                 state.isLoading = false;
-                state.tickets.map((ticket) =>
-                    ticket._id === action.payload._id ? (ticket.status = 'closed') : ticket
+                state.tickets = state.tickets.map((ticket) =>
+                    ticket._id === action.payload._id ? action.payload : ticket
+                );
+                if (state.ticket?._id === action.payload._id) {
+                    state.ticket = action.payload;
+                }
+            })
+            .addCase(claimTicket.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.tickets = state.tickets.map((ticket) =>
+                    ticket._id === action.payload._id ? action.payload : ticket
                 );
             });
     },

@@ -34,11 +34,12 @@ function Tickets() {
             <BackButton url='/' />
             <h1 className='text-3xl font-bold mb-5'>Tickets</h1>
             <div className='tickets border rounded-lg overflow-hidden border-gray-200'>
-                <div className='ticket-headings grid grid-cols-4 gap-4 p-3 bg-gray-100 font-bold border-b border-gray-200'>
+                <div className='ticket-headings grid grid-cols-5 gap-4 p-4 bg-gray-50 font-bold border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500'>
+                    <div>Ticket ID</div>
                     <div>Date</div>
                     <div>Product</div>
+                    <div>Assigned To</div>
                     <div>Status</div>
-                    <div></div>
                 </div>
                 {tickets.map((ticket) => (
                     <TicketItem key={ticket._id} ticket={ticket} />

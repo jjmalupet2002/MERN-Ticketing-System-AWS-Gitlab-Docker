@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ITicket extends Document {
     user: mongoose.Types.ObjectId;
+    assignedTo?: mongoose.Types.ObjectId;
     product: string;
     title: string;
     description: string;
@@ -13,6 +14,11 @@ const ticketSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         required: true,
         ref: 'User',
+    },
+    assignedTo: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null,
     },
     product: {
         type: String,

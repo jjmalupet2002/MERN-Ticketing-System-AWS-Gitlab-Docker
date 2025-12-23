@@ -1,30 +1,34 @@
 import { Link } from 'react-router-dom';
 
-// Assuming a basic structure for now, ideally imported from a types file or slice
-interface Ticket {
-    _id: string;
-    createdAt: string;
-    product: string;
-    status: string;
-}
+// Basic structure for local usage
 
-interface TicketItemProps {
-    ticket: Ticket;
-}
-
-function TicketItem({ ticket }: TicketItemProps) {
+function TicketItem({ ticket }: any) {
     return (
-        <div className='ticket grid grid-cols-4 gap-4 p-3 border-b border-gray-200 bg-gray-50 mb-2 rounded items-center'>
-            <div>{new Date(ticket.createdAt).toLocaleString('en-US')}</div>
-            <div>{ticket.product}</div>
-            <div className={`status status-${ticket.status} px-2 py-1 rounded text-xs font-bold inline-block w-fit ${ticket.status === 'closed' ? 'bg-red-200 text-red-800' :
-                ticket.status === 'open' ? 'bg-green-200 text-green-800' : 'bg-blue-200 text-blue-800'
-                }`}>
-                {ticket.status}
+        <div className='ticket grid grid-cols-5 gap-4 p-4 border-b border-gray-100 bg-white hover:bg-gray-50 transition items-center'>
+            <div className='font-mono text-xs text-gray-400'>#{ticket._id.slice(-6).toUpperCase()}</div>
+            <div className='text-sm text-gray-600'>{new Date(ticket.createdAt).toLocaleDateString()}</div>
+            <div className='font-semibold text-gray-900'>{ticket.product}</div>
+            <div className='text-sm font-medium'>
+                {ticket.assignedTo ? (
+                    <span className="text-gray-900 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                        {ticket.assignedTo.name}
+                    </span>
+                ) : (
+                    <span className="text-gray-400 italic">Unassigned</span>
+                )}
             </div>
-            <Link to={`/ticket/${ticket._id}`} className='btn btn-reverse btn-sm border border-black px-2 py-1 rounded hover:bg-black hover:text-white transition justify-self-start'>
-                View
-            </Link>
+            <div className='flex items-center justify-between'>
+                <div className={`status px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${ticket.status === 'closed' ? 'bg-red-50 text-red-600 border-red-100' :
+                    ticket.status === 'open' ? 'bg-green-50 text-green-800 border-green-100' :
+                        'bg-blue-50 text-blue-600 border-blue-100'
+                    }`}>
+                    {ticket.status}
+                </div>
+                <Link to={`/ticket/${ticket._id}`} className='text-blue-600 hover:text-blue-700 font-bold text-sm'>
+                    View
+                </Link>
+            </div>
         </div>
     );
 }
