@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { getAllTickets, claimTicket, reset } from '../features/tickets/ticketSlice';
+import { getAllTickets, reset } from '../features/tickets/ticketSlice';
 import type { Ticket } from '../features/tickets/ticketSlice';
 import type { RootState, AppDispatch } from '../app/store';
 import Spinner from './Spinner';
@@ -11,7 +11,6 @@ import {
     AlertCircle,
     Clock,
     Eye,
-    HandMetal,
     BookOpen,
     ShieldCheck,
     BookCheck,
@@ -22,6 +21,8 @@ const AgentDashboard = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { user } = useSelector((state: RootState) => state.auth);
     const { tickets, isLoading } = useSelector((state: RootState) => state.ticket);
+    const [assignedSort, setAssignedSort] = useState<'asc' | 'desc'>('desc');
+    const [unassignedSort, setUnassignedSort] = useState<'asc' | 'desc'>('desc');
 
     useEffect(() => {
         dispatch(getAllTickets());
@@ -30,16 +31,29 @@ const AgentDashboard = () => {
         };
     }, [dispatch]);
 
-    if (isLoading) return <Spinner />;
-
     // Metrics calculation
     const assignedTickets = tickets.filter((t: Ticket) => t.assignedTo?._id === user?._id && t.status !== 'closed');
     const unassignedQueue = tickets.filter((t: Ticket) => !t.assignedTo && t.status !== 'closed');
     const urgentTickets = tickets.filter((t: Ticket) => t.status !== 'closed' && (t.product === 'iPhone' || t.product === 'Macbook Pro'));
 
-    const handleClaim = (id: string) => {
-        dispatch(claimTicket(id));
-    };
+    // Sorted assigned tickets
+    const sortedAssignedTickets = useMemo(() => {
+        return [...assignedTickets].sort((a, b) => {
+            const comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            return assignedSort === 'asc' ? comparison : -comparison;
+        });
+    }, [assignedTickets, assignedSort]);
+
+    // Sorted unassigned tickets
+    const sortedUnassignedTickets = useMemo(() => {
+        return [...unassignedQueue].sort((a, b) => {
+            const comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            return unassignedSort === 'asc' ? comparison : -comparison;
+        });
+    }, [unassignedQueue, unassignedSort]);
+
+    // Early return AFTER all hooks
+    if (isLoading) return <Spinner />;
 
     return (
         <div className="bg-gray-50 min-h-screen pb-20">
@@ -114,15 +128,26 @@ const AgentDashboard = () => {
                             </div>
                             <h2 className="text-2xl font-bold text-gray-900">Assigned to Me</h2>
                         </div>
-                        <span className="bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
-                            {assignedTickets.length} Active Tickets
-                        </span>
+                        <div className="flex items-center gap-3">
+                            <select
+                                value={assignedSort}
+                                onChange={(e) => setAssignedSort(e.target.value as 'asc' | 'desc')}
+                                className="text-xs border border-gray-300 rounded px-3 py-1.5 font-semibold"
+                            >
+                                <option value="desc">Newest First</option>
+                                <option value="asc">Oldest First</option>
+                            </select>
+                            <span className="bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
+                                {assignedTickets.length} Active Tickets
+                            </span>
+                        </div>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-gray-50 text-xs uppercase font-bold text-gray-500 border-b border-gray-100">
                                 <tr>
                                     <th className="px-8 py-5">Ticket ID</th>
+                                    <th className="px-8 py-5">Date</th>
                                     <th className="px-8 py-5">Subject</th>
                                     <th className="px-8 py-5 text-center">Priority</th>
                                     <th className="px-8 py-5">Status</th>
@@ -130,9 +155,12 @@ const AgentDashboard = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {assignedTickets.slice(0, 5).map((ticket: Ticket) => (
+                                {sortedAssignedTickets.slice(0, 5).map((ticket: Ticket) => (
                                     <tr key={ticket._id} className="hover:bg-gray-50/50 transition cursor-default">
                                         <td className="px-8 py-6 font-mono text-xs text-gray-400">#{ticket._id.slice(-6).toUpperCase()}</td>
+                                        <td className="px-8 py-6 text-xs text-gray-500">
+                                            {new Date(ticket.createdAt).toLocaleDateString()}
+                                        </td>
                                         <td className="px-8 py-6 text-gray-900 max-w-md">
                                             <div className="font-bold mb-0.5">{ticket.title}</div>
                                             <div className="text-xs text-gray-500 truncate">{ticket.description}</div>
@@ -163,7 +191,7 @@ const AgentDashboard = () => {
                                 ))}
                                 {assignedTickets.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="px-8 py-20 text-center text-gray-400 italic font-medium">
+                                        <td colSpan={6} className="px-8 py-20 text-center text-gray-400 italic font-medium">
                                             Your inbox is empty. Check the unassigned queue for new tasks.
                                         </td>
                                     </tr>
@@ -182,15 +210,26 @@ const AgentDashboard = () => {
                             </div>
                             <h2 className="text-2xl font-bold text-gray-900">Unassigned Tickets</h2>
                         </div>
-                        <span className="bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
-                            {unassignedQueue.length} Pending Claim
-                        </span>
+                        <div className="flex items-center gap-3">
+                            <select
+                                value={unassignedSort}
+                                onChange={(e) => setUnassignedSort(e.target.value as 'asc' | 'desc')}
+                                className="text-xs border border-gray-300 rounded px-3 py-1.5 font-semibold"
+                            >
+                                <option value="desc">Newest First</option>
+                                <option value="asc">Oldest First</option>
+                            </select>
+                            <span className="bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
+                                {unassignedQueue.length} Pending Claim
+                            </span>
+                        </div>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-gray-50 text-xs uppercase font-bold text-gray-500 border-b border-gray-100">
                                 <tr>
                                     <th className="px-8 py-5">Ticket ID</th>
+                                    <th className="px-8 py-5">Date</th>
                                     <th className="px-8 py-5">Subject</th>
                                     <th className="px-8 py-5">Product</th>
                                     <th className="px-8 py-5">Requester</th>
@@ -198,9 +237,12 @@ const AgentDashboard = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {unassignedQueue.map((ticket: Ticket) => (
+                                {sortedUnassignedTickets.map((ticket: Ticket) => (
                                     <tr key={ticket._id} className="hover:bg-gray-50/50 transition">
                                         <td className="px-8 py-6 font-mono text-xs text-gray-400">#{ticket._id.slice(-6).toUpperCase()}</td>
+                                        <td className="px-8 py-6 text-xs text-gray-500">
+                                            {new Date(ticket.createdAt).toLocaleDateString()}
+                                        </td>
                                         <td className="px-8 py-6 font-bold text-gray-900">{ticket.title}</td>
                                         <td className="px-8 py-6">
                                             <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded">
@@ -212,18 +254,18 @@ const AgentDashboard = () => {
                                             <div className="text-xs text-gray-400 lowercase">{ticket.user?.email}</div>
                                         </td>
                                         <td className="px-8 py-6 text-right">
-                                            <button
-                                                onClick={() => handleClaim(ticket._id)}
-                                                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-xs transition shadow-md hover:shadow-lg active:scale-95"
+                                            <Link
+                                                to={`/ticket/${ticket._id}`}
+                                                className="inline-flex items-center gap-2 bg-gray-900 text-white px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-gray-800 transition shadow-sm"
                                             >
-                                                Claim Ticket <HandMetal size={16} />
-                                            </button>
+                                                View <Eye size={14} />
+                                            </Link>
                                         </td>
                                     </tr>
                                 ))}
                                 {unassignedQueue.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="px-8 py-20 text-center text-gray-400 italic font-medium">
+                                        <td colSpan={6} className="px-8 py-20 text-center text-gray-400 italic font-medium">
                                             No unassigned tickets available. System clear!
                                         </td>
                                     </tr>

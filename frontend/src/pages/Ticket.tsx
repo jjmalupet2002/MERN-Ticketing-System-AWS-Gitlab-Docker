@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { useSelector, useDispatch } from 'react-redux';
-import { getTicket, closeTicket, addNote } from '../features/tickets/ticketSlice';
+import { getTicket, closeTicket, addNote, claimTicket } from '../features/tickets/ticketSlice';
 import { useParams, useNavigate } from 'react-router-dom';
 import BackButton from '../components/BackButton';
 import Spinner from '../components/Spinner';
@@ -33,7 +33,22 @@ function Ticket() {
         if (ticketId) {
             dispatch(closeTicket(ticketId));
             toast.success('Ticket Closed');
-            navigate('/tickets');
+            navigate(user?.role === 'agent' || user?.role === 'admin' ? '/' : '/tickets');
+        }
+    };
+
+    // Claim ticket (for agents)
+    const onTicketClaim = () => {
+        if (ticketId) {
+            dispatch(claimTicket(ticketId))
+                .unwrap()
+                .then(() => {
+                    toast.success('Ticket claimed successfully');
+                    dispatch(getTicket(ticketId));
+                })
+                .catch((error) => {
+                    toast.error(error || 'Failed to claim ticket');
+                });
         }
     };
 
@@ -97,13 +112,25 @@ function Ticket() {
                             </p>
                         </div>
 
-                        {ticket?.status !== 'closed' && (
-                            <button
-                                onClick={onTicketClose}
-                                className='bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition font-bold shadow-md whitespace-nowrap'
-                            >
-                                Close Ticket
-                            </button>
+                        {/* Action Buttons - Role-based */}
+                        {ticket?.status !== 'closed' && (user?.role === 'agent' || user?.role === 'admin') && (
+                            <>
+                                {!ticket?.assignedTo ? (
+                                    <button
+                                        onClick={onTicketClaim}
+                                        className='bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-bold shadow-md whitespace-nowrap'
+                                    >
+                                        Claim Ticket
+                                    </button>
+                                ) : ticket.assignedTo._id === user?._id ? (
+                                    <button
+                                        onClick={onTicketClose}
+                                        className='bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition font-bold shadow-md whitespace-nowrap'
+                                    >
+                                        Close Ticket
+                                    </button>
+                                ) : null}
+                            </>
                         )}
                     </div>
                 </div>
@@ -213,11 +240,12 @@ function Ticket() {
                     <div className='border-t border-gray-200 pt-8'>
                         <h2 className='text-lg font-bold text-gray-900 mb-6'>Conversation</h2>
 
-                        {/* Notes Thread */}
-                        <div className='space-y-4 mb-6'>
+                        {/* Notes Thread - Scrollable */}
+                        <div className='max-h-96 overflow-y-auto space-y-4 mb-6 pr-2'>
                             {ticket?.notes && ticket.notes.length > 0 ? (
                                 ticket.notes.map((note, index) => {
                                     const isAgent = note.role === 'agent' || note.role === 'admin';
+                                    const authorName = note.author?.name || (isAgent ? 'Agent' : 'User');
                                     return (
                                         <div
                                             key={index}
@@ -230,7 +258,7 @@ function Ticket() {
                                                         {isAgent ? '🛡️ Agent' : '👤 You'}
                                                     </span>
                                                     <span className='text-xs font-semibold text-gray-700'>
-                                                        {note.author?.name || 'Unknown'}
+                                                        {authorName}
                                                     </span>
                                                     <span className='text-xs text-gray-500'>
                                                         {new Date(note.createdAt).toLocaleString()}
