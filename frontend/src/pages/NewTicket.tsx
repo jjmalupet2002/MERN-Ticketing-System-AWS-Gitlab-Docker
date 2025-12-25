@@ -65,7 +65,7 @@ function NewTicket() {
                 },
             };
 
-            await axios.post('http://localhost:5000/api/tickets', formData, config);
+            await axios.post('/api/tickets', formData, config);
             toast.success('Ticket created successfully!');
             navigate('/tickets');
         } catch (error: any) {

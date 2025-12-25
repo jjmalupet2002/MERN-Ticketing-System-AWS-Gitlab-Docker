@@ -127,7 +127,7 @@ function Home() {
                                 </tr>
                                 <tr className="hover:bg-gray-50 transition cursor-pointer">
                                     <td className="px-6 py-4 font-mono text-xs text-gray-400">#TK-88142</td>
-                                    <td className="px-6 py-4 font-semibold text-gray-900">iPhone 15 Display Flickering</td>
+                                    <td className="px-6 py-4 font-semibold text-gray-900">iPhone 16 Display Flickering</td>
                                     <td className="px-6 py-4 text-xs font-bold">
                                         <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-bold">CLOSED</span>
                                     </td>

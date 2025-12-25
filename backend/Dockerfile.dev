@@ -1,0 +1,20 @@
+# Use a lightweight Node.js image based on Alpine Linux
+FROM node:20-alpine
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy package definition first to cache dependencies (Docker Layer Caching)
+COPY package*.json ./
+
+# Install all dependencies (including devDependencies like typescript)
+RUN npm install
+
+# Copy the rest of the source code
+COPY . .
+
+# Expose port (informational)
+EXPOSE 5000
+
+# Start dev server with hot-reload (ts-node-dev)
+CMD ["npm", "run", "dev"]

@@ -1,0 +1,34 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    # Important: Maps your local code to container code for INSTANT updates (Hot Reload)
+    volumes:
+      - ./frontend/src:/app/src
+    ports:
+      - "3000:3000"
+    # Loads environment variables from your local .env file
+    env_file: .env
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend/src:/app/src
+    ports:
+      - "5000:5000"
+    env_file: .env
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:

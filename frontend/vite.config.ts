@@ -14,4 +14,15 @@ export default defineConfig({
       ],
     },
   },
+  server: {
+    port: 3000,
+    host: true, // Needed for Docker port mapping
+    proxy: {
+      '/api': {
+        target: 'http://backend:5000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
 })

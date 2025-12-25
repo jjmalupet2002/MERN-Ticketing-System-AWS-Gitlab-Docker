@@ -1,0 +1,21 @@
+# --- Stage 1: Builder ---
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+# Compile TypeScript to plain JavaScript in 'dist' folder
+RUN npm run build 
+
+# --- Stage 2: Runner ---
+# Start fresh with a new, smaller image
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+# Install ONLY production dependencies (ignoring devDependencies)
+RUN npm install --only=production
+# Copy only the compiled code from the builder stage
+COPY --from=builder /app/dist ./dist
+EXPOSE 5000
+# Run the compiled JavaScript
+CMD ["node", "dist/index.js"]

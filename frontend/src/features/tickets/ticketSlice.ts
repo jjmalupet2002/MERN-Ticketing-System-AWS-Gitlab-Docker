@@ -57,7 +57,7 @@ const initialState: TicketState = {
     message: '',
 };
 
-const API_URL = 'http://localhost:5000/api/tickets/';
+const API_URL = '/api/tickets/';
 
 // Create new ticket
 export const createTicket = createAsyncThunk('tickets/create', async (ticketData: any, thunkAPI) => {
