@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaUser } from 'react-icons/fa';
+import { FaUser, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -14,6 +14,8 @@ function Register() {
         password: '',
         confirmPassword: '',
     });
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [role, setRole] = useState<'user' | 'agent'>('user');
 
     const { name, email, password, confirmPassword } = formData;
@@ -154,30 +156,51 @@ function Register() {
                             <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
                                 <div className='form-group'>
                                     <label className='block text-xs font-bold text-gray-500 uppercase mb-2'>Password</label>
-                                    <input
-                                        type='password'
-                                        className={`form-control w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${password && !isPasswordValid ? 'border-amber-300 bg-amber-50' : 'border-gray-300'
-                                            }`}
-                                        id='password'
-                                        name='password'
-                                        value={password}
-                                        onChange={onChange}
-                                        placeholder='Enter password'
-                                        required
-                                    />
+                                    <div className='relative'>
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            className={`form-control w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition pr-10 ${password && !isPasswordValid ? 'border-amber-300 bg-amber-50' : 'border-gray-300'
+                                                }`}
+                                            id='password'
+                                            name='password'
+                                            value={password}
+                                            onChange={onChange}
+                                            placeholder='Enter password'
+                                            required
+                                        />
+                                        <button
+                                            type='button'
+                                            className='absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer'
+                                            onClick={() => setShowPassword(!showPassword)}
+                                        >
+                                            {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className='form-group'>
                                     <label className='block text-xs font-bold text-gray-500 uppercase mb-2'>Confirm Password</label>
-                                    <input
-                                        type='password'
-                                        className='form-control w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition'
-                                        id='password2'
-                                        name='confirmPassword'
-                                        value={confirmPassword}
-                                        onChange={onChange}
-                                        placeholder='Repeat password'
-                                        required
-                                    />
+                                    <div className='relative'>
+                                        <input
+                                            type={showConfirmPassword ? 'text' : 'password'}
+                                            className={`form-control w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition pr-10 ${confirmPassword && password !== confirmPassword ? 'border-red-300 bg-red-50 focus:ring-red-200' : 'border-gray-300'}`}
+                                            id='password2'
+                                            name='confirmPassword'
+                                            value={confirmPassword}
+                                            onChange={onChange}
+                                            placeholder='Repeat password'
+                                            required
+                                        />
+                                        <button
+                                            type='button'
+                                            className='absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer'
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        >
+                                            {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                                        </button>
+                                    </div>
+                                    {confirmPassword && password !== confirmPassword && (
+                                        <p className='text-red-500 text-xs mt-1'>Passwords do not match</p>
+                                    )}
                                 </div>
                             </div>
 

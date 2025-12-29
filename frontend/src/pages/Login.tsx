@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaSignInAlt } from 'react-icons/fa';
+import { FaSignInAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -12,6 +12,7 @@ function Login() {
         email: '',
         password: '',
     });
+    const [showPassword, setShowPassword] = useState(false);
 
     const { email, password } = formData;
 
@@ -81,16 +82,25 @@ function Login() {
                         </div>
                         <div className='form-group mb-8'>
                             <label className='block text-sm font-semibold text-gray-700 mb-2'>Password</label>
-                            <input
-                                type='password'
-                                className='form-control w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition'
-                                id='password'
-                                name='password'
-                                value={password}
-                                onChange={onChange}
-                                placeholder='Enter password'
-                                required
-                            />
+                            <div className='relative'>
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    className='form-control w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition pr-10'
+                                    id='password'
+                                    name='password'
+                                    value={password}
+                                    onChange={onChange}
+                                    placeholder='Enter password'
+                                    required
+                                />
+                                <button
+                                    type='button'
+                                    className='absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer'
+                                    onClick={() => setShowPassword(!showPassword)}
+                                >
+                                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                </button>
+                            </div>
                         </div>
 
                         <div className='form-group'>
