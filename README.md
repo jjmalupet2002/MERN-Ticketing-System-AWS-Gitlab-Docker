@@ -5,10 +5,30 @@
 1. **Prerequisites**
    - Node.js
    - Docker & Docker Compose
+     - *Note: On Linux, you may need to install the Compose plugin separately (e.g., `sudo apt install docker-compose-plugin` or `sudo apt install docker-compose`).*
 
-2. **Start Database**
+2. **Docker Setup (Recommended)**
+
+   **Development**:
+   Start all services with hot-reloading:
    ```bash
-   docker compose up -d
+   docker compose -f docker-compose.dev.yml up --build
+   ```
+   - Frontend: http://localhost:3000
+   - Backend: http://localhost:5000
+
+   **Production**:
+   Start all services in production mode:
+   ```bash
+   docker compose -f docker-compose.prod.yml up --build -d
+   ```
+   - Frontend: http://localhost:80
+
+3. **Manual Setup (Local)**
+   
+   **Start Database**:
+   ```bash
+   docker compose -f docker-compose.dev.yml up -d mongo
    ```
 
 3. **Backend**
