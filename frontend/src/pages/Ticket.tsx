@@ -244,34 +244,34 @@ function Ticket() {
                         <div className='max-h-96 overflow-y-auto space-y-4 mb-6 pr-2'>
                             {ticket?.notes && ticket.notes.length > 0 ? (
                                 ticket.notes.map((note, index) => {
-                                    // Determine if the message is from the current logged-in user
-                                    const isMe = note.author?._id === user?._id || (note.isStaff && user?.role !== 'user' && !note.author?._id); // Fallback for old notes if needed
                                     const isStaffNote = note.role === 'agent' || note.role === 'admin';
+                                    const isMe = note.author?._id === user?._id;
+                                    const displayName = isMe ? 'You' : (note.author?.name || (isStaffNote ? 'Agent' : 'User'));
 
                                     return (
                                         <div
                                             key={index}
-                                            className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+                                            className={`flex ${isStaffNote ? 'justify-start' : 'justify-end'}`}
                                         >
-                                            <div className={`max-w-[75%] ${isMe
-                                                ? 'bg-blue-600 text-white' // My messages (Blue)
-                                                : 'bg-gray-100 border border-gray-200 text-gray-800' // Others (Gray)
-                                                } rounded-lg p-4 shadow-sm relative`}
+                                            <div className={`max-w-[75%] ${isStaffNote
+                                                ? 'bg-blue-50 border border-blue-200 text-gray-800' // Agent (Left, Blue)
+                                                : 'bg-gray-100 border border-gray-200 text-gray-800' // User (Right, Gray)
+                                                } rounded-lg p-4 shadow-sm`}
                                             >
-                                                <div className={`flex items-center gap-2 mb-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                                    <span className={`text-xs font-bold ${isMe ? 'text-blue-100' : 'text-gray-500'}`}>
-                                                        {isMe ? 'You' : (note.author?.name || (isStaffNote ? 'Agent' : 'User'))}
+                                                <div className={`flex items-center gap-2 mb-2 ${isStaffNote ? 'justify-start' : 'justify-end'}`}>
+                                                    <span className={`text-xs font-bold ${isStaffNote ? 'text-blue-700' : 'text-gray-600'}`}>
+                                                        {displayName}
                                                     </span>
-                                                    {isStaffNote && !isMe && (
-                                                        <span className='inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700'>
+                                                    {isStaffNote && (
+                                                        <span className='inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white'>
                                                             AGENT
                                                         </span>
                                                     )}
-                                                    <span className={`text-[10px] ${isMe ? 'text-blue-200' : 'text-gray-400'}`}>
+                                                    <span className='text-[10px] text-gray-400'>
                                                         {new Date(note.createdAt).toLocaleString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
                                                 </div>
-                                                <p className={`leading-relaxed whitespace-pre-wrap ${isMe ? 'text-white' : 'text-gray-800'}`}>
+                                                <p className='leading-relaxed whitespace-pre-wrap text-gray-800'>
                                                     {note.content}
                                                 </p>
                                             </div>
@@ -337,7 +337,7 @@ function Ticket() {
                                         </div>
                                         <div className="ml-3">
                                             <p className="text-sm text-yellow-700">
-                                                <span className="font-bold">Waiting for an Agent.</span> Conversation will be enabled once an agent claims this ticket.
+                                                <span className="font-bold">{user?.role === 'agent' || user?.role === 'admin' ? 'Claim this ticket first' : 'Waiting for an Agent'}.</span> {user?.role === 'agent' || user?.role === 'admin' ? 'Claim this ticket before starting a conversation' : 'Conversation will be enabled once an agent claims this ticket'}.
                                             </p>
                                         </div>
                                     </div>
