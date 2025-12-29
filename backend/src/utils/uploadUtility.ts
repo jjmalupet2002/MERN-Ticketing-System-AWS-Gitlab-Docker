@@ -35,10 +35,12 @@ const cloudStorage = process.env.STORAGE_PROVIDER === 'cloudinary'
     ? new CloudinaryStorage({
         cloudinary: cloudinary,
         params: async (req: any, file: any) => {
+            const isImage = file.mimetype.startsWith('image/');
             return {
                 folder: 'ticketing-system',
                 public_id: path.parse(file.originalname).name + '-' + Date.now(),
-                // resource_type: 'auto', // auto-detect image/video/raw
+                resource_type: isImage ? 'image' : 'raw',
+                format: isImage ? undefined : path.extname(file.originalname).substring(1), // Preserve extension for raw files
             };
         },
     })
