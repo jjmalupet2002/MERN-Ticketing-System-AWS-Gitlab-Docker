@@ -191,7 +191,7 @@ function Ticket() {
                                         return (
                                             <a
                                                 key={index}
-                                                href={`/uploads/${attachment.filename}`}
+                                                href={attachment.filename.startsWith('http') ? attachment.filename : `/uploads/${attachment.filename}`}
                                                 target='_blank'
                                                 rel='noopener noreferrer'
                                                 className='flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition group'

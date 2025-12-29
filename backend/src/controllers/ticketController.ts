@@ -37,7 +37,6 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
     }
 
     // Handle file attachments if present
-    // Handle file attachments if present
     const attachments = (req.files as Express.Multer.File[])?.map(file => ({
         // Use file.path for Cloudinary URL, fall back to file.filename for local
         filename: file.path || file.filename,
