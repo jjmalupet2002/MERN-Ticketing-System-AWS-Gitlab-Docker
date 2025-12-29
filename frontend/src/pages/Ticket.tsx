@@ -244,27 +244,34 @@ function Ticket() {
                         <div className='max-h-96 overflow-y-auto space-y-4 mb-6 pr-2'>
                             {ticket?.notes && ticket.notes.length > 0 ? (
                                 ticket.notes.map((note, index) => {
-                                    const isAgent = note.role === 'agent' || note.role === 'admin';
-                                    const authorName = note.author?.name || (isAgent ? 'Agent' : 'User');
+                                    // Determine if the message is from the current logged-in user
+                                    const isMe = note.author?._id === user?._id || (note.isStaff && user?.role !== 'user' && !note.author?._id); // Fallback for old notes if needed
+                                    const isStaffNote = note.role === 'agent' || note.role === 'admin';
+
                                     return (
                                         <div
                                             key={index}
-                                            className={`flex ${isAgent ? 'justify-start' : 'justify-end'}`}
+                                            className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
                                         >
-                                            <div className={`max-w-[75%] ${isAgent ? 'bg-blue-50 border-blue-200' : 'bg-gray-100 border-gray-200'} border rounded-lg p-4`}>
-                                                <div className='flex items-center gap-2 mb-2'>
-                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${isAgent ? 'bg-blue-600 text-white' : 'bg-gray-600 text-white'
-                                                        }`}>
-                                                        {isAgent ? '🛡️ Agent' : '👤 You'}
+                                            <div className={`max-w-[75%] ${isMe
+                                                ? 'bg-blue-600 text-white' // My messages (Blue)
+                                                : 'bg-gray-100 border border-gray-200 text-gray-800' // Others (Gray)
+                                                } rounded-lg p-4 shadow-sm relative`}
+                                            >
+                                                <div className={`flex items-center gap-2 mb-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                                    <span className={`text-xs font-bold ${isMe ? 'text-blue-100' : 'text-gray-500'}`}>
+                                                        {isMe ? 'You' : (note.author?.name || (isStaffNote ? 'Agent' : 'User'))}
                                                     </span>
-                                                    <span className='text-xs font-semibold text-gray-700'>
-                                                        {authorName}
-                                                    </span>
-                                                    <span className='text-xs text-gray-500'>
-                                                        {new Date(note.createdAt).toLocaleString()}
+                                                    {isStaffNote && !isMe && (
+                                                        <span className='inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700'>
+                                                            AGENT
+                                                        </span>
+                                                    )}
+                                                    <span className={`text-[10px] ${isMe ? 'text-blue-200' : 'text-gray-400'}`}>
+                                                        {new Date(note.createdAt).toLocaleString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
                                                 </div>
-                                                <p className='text-gray-800 leading-relaxed whitespace-pre-wrap'>
+                                                <p className={`leading-relaxed whitespace-pre-wrap ${isMe ? 'text-white' : 'text-gray-800'}`}>
                                                     {note.content}
                                                 </p>
                                             </div>
@@ -285,40 +292,58 @@ function Ticket() {
                         </div>
 
                         {/* Add Reply Form */}
-                        {ticket?.status !== 'closed' && (
-                            <form onSubmit={(e) => {
-                                e.preventDefault();
-                                const form = e.currentTarget;
-                                const formData = new FormData(form);
-                                const content = formData.get('content') as string;
-                                if (content.trim() && ticketId) {
-                                    dispatch(addNote({ ticketId, content }))
-                                        .unwrap()
-                                        .then(() => {
-                                            dispatch(getTicket(ticketId));
-                                            form.reset();
-                                        })
-                                        .catch((error) => {
-                                            toast.error(error || 'Failed to add note');
-                                        });
-                                }
-                            }}>
-                                <label className='block text-sm font-semibold text-gray-600 mb-2'>Add a Reply</label>
-                                <textarea
-                                    name='content'
-                                    className='w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none'
-                                    rows={4}
-                                    placeholder='Type your message here...'
-                                    required
-                                ></textarea>
-                                <button
-                                    type='submit'
-                                    className='mt-3 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-md'
-                                >
-                                    Send Reply
-                                </button>
-                            </form>
-                        )}
+                        {/* Add Reply Form or Unclaimed Alert */}
+                        {ticket?.status !== 'closed' ? (
+                            ticket?.assignedTo ? (
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const form = e.currentTarget;
+                                    const formData = new FormData(form);
+                                    const content = formData.get('content') as string;
+                                    if (content.trim() && ticketId) {
+                                        dispatch(addNote({ ticketId, content }))
+                                            .unwrap()
+                                            .then(() => {
+                                                dispatch(getTicket(ticketId));
+                                                form.reset();
+                                            })
+                                            .catch((error) => {
+                                                toast.error(error || 'Failed to add note');
+                                            });
+                                    }
+                                }}>
+                                    <label className='block text-sm font-semibold text-gray-600 mb-2'>Add a Reply</label>
+                                    <textarea
+                                        name='content'
+                                        className='w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none'
+                                        rows={4}
+                                        placeholder='Type your message here...'
+                                        required
+                                    ></textarea>
+                                    <button
+                                        type='submit'
+                                        className='mt-3 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-md'
+                                    >
+                                        Send Reply
+                                    </button>
+                                </form>
+                            ) : (
+                                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+                                    <div className="flex">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3">
+                                            <p className="text-sm text-yellow-700">
+                                                <span className="font-bold">Waiting for an Agent.</span> Conversation will be enabled once an agent claims this ticket.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        ) : null}
                     </div>
                 </div>
             </div>

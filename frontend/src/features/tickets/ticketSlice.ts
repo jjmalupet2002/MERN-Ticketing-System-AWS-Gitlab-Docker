@@ -12,6 +12,7 @@ export interface Note {
     };
     role: string;
     content: string;
+    isStaff?: boolean;
     createdAt: string;
 }
 
