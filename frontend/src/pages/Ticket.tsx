@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useSocket } from '../context/SocketContext';
 import { toast } from 'react-toastify';
 import { useSelector, useDispatch } from 'react-redux';
 import { getTicket, closeTicket, addNote, claimTicket } from '../features/tickets/ticketSlice';
@@ -18,6 +19,8 @@ function Ticket() {
     const dispatch = useDispatch<AppDispatch>();
     const { ticketId } = params;
 
+    const { socket } = useSocket();
+
     useEffect(() => {
         if (isError) {
             toast.error(message);
@@ -27,6 +30,36 @@ function Ticket() {
             dispatch(getTicket(ticketId));
         }
     }, [isError, message, ticketId, dispatch]);
+
+    // Socket: Join ticket room and listen for new notes
+    useEffect(() => {
+        if (socket && ticketId) {
+            socket.emit('join_ticket', ticketId);
+
+            socket.on('new_note', (_note: any) => {
+                // We can either append to state manually or just refetch
+                // Refetching is safer to ensure data consistency
+                dispatch(getTicket(ticketId));
+
+                // Optional: Scroll to bottom logic could go here
+            });
+
+            socket.on('ticket_updated', () => {
+                dispatch(getTicket(ticketId));
+            })
+
+            return () => {
+                socket.off('new_note');
+                socket.off('ticket_updated');
+            }
+        }
+    }, [socket, ticketId, dispatch]);
+
+    // Auto-scroll to bottom of chat
+    const notesEndRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        notesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [ticket?.notes]);
 
     // Close ticket
     const onTicketClose = () => {
@@ -52,7 +85,7 @@ function Ticket() {
         }
     };
 
-    if (isLoading) {
+    if (isLoading && !ticket) {
         return <Spinner />;
     }
 
@@ -289,6 +322,7 @@ function Ticket() {
                                     <p className='text-sm text-gray-400'>Start the conversation by adding a reply below</p>
                                 </div>
                             )}
+                            <div ref={notesEndRef} />
                         </div>
 
                         {/* Add Reply Form */}
@@ -304,7 +338,7 @@ function Ticket() {
                                         dispatch(addNote({ ticketId, content }))
                                             .unwrap()
                                             .then(() => {
-                                                dispatch(getTicket(ticketId));
+                                                // dispatch(getTicket(ticketId)); // Removed: Socket handles update
                                                 form.reset();
                                             })
                                             .catch((error) => {

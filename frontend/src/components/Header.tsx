@@ -4,6 +4,10 @@ import { useSelector, useDispatch } from 'react-redux';
 import { logout, reset } from '../features/auth/authSlice';
 import type { RootState, AppDispatch } from '../app/store';
 import NotificationDropdown from './NotificationDropdown';
+import { useSocket } from '../context/SocketContext';
+import { useEffect } from 'react';
+import { toast } from 'react-toastify';
+import { addNotification } from '../features/notifications/notificationSlice';
 
 function Header() {
     const navigate = useNavigate();
@@ -15,6 +19,37 @@ function Header() {
         dispatch(reset());
         navigate('/login');
     };
+
+    // Socket Notification Listener
+    const { socket } = useSocket();
+    useEffect(() => {
+        if (socket && user) {
+            socket.on('notification', (data: any) => {
+                toast.info(data.message, {
+                    onClick: () => navigate(`/ticket/${data.ticketId}`)
+                });
+
+                // Construct a temporary notification object for the UI
+                // Note: In a real app, the socket should probably send the full object
+                // or we fetch the single new notification. For now, we stub it to update UI instantly.
+                const newNotification = {
+                    _id: Date.now().toString(), // Temp ID
+                    recipient: user._id,
+                    ticket: { _id: data.ticketId, title: 'New Reply', status: 'open' }, // Simplified
+                    type: 'REPLY',
+                    message: data.message,
+                    seen: false,
+                    createdAt: new Date().toISOString()
+                };
+
+                dispatch(addNotification(newNotification));
+            });
+
+            return () => {
+                socket.off('notification');
+            };
+        }
+    }, [socket, user, navigate, dispatch]);
 
     return (
         <header className='bg-[rgb(10,10,10)] text-white border-b border-gray-800'>

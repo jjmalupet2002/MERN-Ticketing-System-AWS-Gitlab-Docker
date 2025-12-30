@@ -25,6 +25,14 @@ if (process.env.NODE_ENV !== 'test') {
     connectDB();
 }
 
-app.listen(PORT, () => {
+import { createServer } from 'http';
+import { SocketManager } from './socket/socketManager';
+
+const httpServer = createServer(app);
+
+// Initialize Socket.io
+SocketManager.init(httpServer);
+
+httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

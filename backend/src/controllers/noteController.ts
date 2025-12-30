@@ -4,6 +4,7 @@ import User from '../models/User';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { createNotification } from './notificationController';
 import { sendEmail, emailTemplates } from '../utils/emailUtility';
+import { SocketManager } from '../socket/socketManager';
 
 // @desc    Get notes for a ticket
 // @route   GET /api/tickets/:ticketId/notes
@@ -121,6 +122,25 @@ export const addNote = async (req: AuthRequest, res: Response) => {
                 ),
             });
         }
+
+        // Notify the recipient via Socket (Red Dot / Toast)
+        const recipientId = (isStaff && ticket.user)
+            ? (ticket.user as any)._id
+            : (!isStaff && ticket.assignedTo)
+                ? (ticket.assignedTo as any)._id
+                : null;
+
+        if (recipientId) {
+            const io = SocketManager.getInstance();
+            io.emitToUser(recipientId.toString(), 'notification', {
+                message: `New reply from ${req.user!.name}`,
+                ticketId: ticket._id.toString()
+            });
+        }
+
+        // Socket Event: Real-time Chat
+        const io = SocketManager.getInstance();
+        io.emitToTicket(req.params.ticketId, 'new_note', ticket.notes[ticket.notes.length - 1]);
 
         res.status(201).json(ticket.notes[ticket.notes.length - 1]);
     } catch (error) {

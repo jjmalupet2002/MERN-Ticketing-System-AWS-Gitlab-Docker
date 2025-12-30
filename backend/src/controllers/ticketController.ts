@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import Ticket from '../models/Ticket';
+import User from '../models/User';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { SocketManager } from '../socket/socketManager';
+import { sendEmail, emailTemplates } from '../utils/emailUtility';
 
 // @desc    Get user tickets
 // @route   GET /api/tickets
@@ -53,6 +56,10 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
         attachments,
         user: req.user?._id,
     });
+
+    // Socket Event: New Ticket Created (Optional: Notify admins dashboard)
+    // const io = SocketManager.getInstance();
+    // io.io.emit('new_ticket_dashboard', ticket); 
 
     res.status(201).json(ticket);
 };
@@ -136,7 +143,75 @@ export const updateTicket = async (req: AuthRequest, res: Response) => {
             req.params.id,
             req.body,
             { new: true }
-        );
+        )
+            .populate('user', 'name email')
+            .populate('assignedTo', 'name email');
+
+        // Socket Event: Notify active users viewing the ticket
+        const io = SocketManager.getInstance();
+        io.emitToTicket(req.params.id, 'ticket_updated', updatedTicket);
+
+        // Email Trigger: If Status Changed to Closed
+        if (req.body.status === 'closed' && req.body.status !== ticket.status) {
+            const user = await User.findById(ticket.user);
+            if (user) {
+                // Send email to User
+                sendEmail({
+                    to: user.email,
+                    subject: `Ticket #${ticket._id} Closed: ${ticket.title}`,
+                    html: emailTemplates.ticketClosed(
+                        ticket._id.toString(),
+                        ticket.title
+                    )
+                });
+
+                // Notify User via Socket
+                io.emitToUser(user._id.toString(), 'notification', {
+                    message: `Ticket #${ticket._id} has been closed`,
+                    ticketId: ticket._id.toString(),
+                    type: 'CLOSED'
+                });
+            }
+        }
+
+        // Email Trigger: If Assigned
+        if (req.body.assignedTo && req.body.assignedTo !== ticket.assignedTo?.toString()) {
+            const agent = await User.findById(req.body.assignedTo);
+            const user = await User.findById(ticket.user); // Get ticket owner
+
+            if (agent) {
+                // Send email to Agent
+                sendEmail({
+                    to: agent.email,
+                    subject: `New Ticket Assigned: #${ticket._id}`,
+                    html: emailTemplates.ticketAssigned(
+                        ticket._id.toString(),
+                        ticket.title,
+                        agent.name
+                    )
+                });
+            }
+
+            if (user && agent) {
+                // Notify User via Socket
+                io.emitToUser(user._id.toString(), 'notification', {
+                    message: `Ticket #${ticket._id} claimed by ${agent.name}`,
+                    ticketId: ticket._id.toString(),
+                    type: 'ASSIGNED'
+                });
+
+                // Send email to User
+                sendEmail({
+                    to: user.email,
+                    subject: `Ticket #${ticket._id} Claimed by Agent`,
+                    html: emailTemplates.ticketUpdated(
+                        ticket._id.toString(),
+                        ticket.title,
+                        `Your ticket has been claimed by ${agent.name}.`
+                    )
+                });
+            }
+        }
 
         res.status(200).json(updatedTicket);
     } catch (error) {

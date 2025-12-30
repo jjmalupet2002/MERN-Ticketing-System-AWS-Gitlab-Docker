@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { Menu, Transition } from '@headlessui/react';
 import { Bell } from 'lucide-react';
-import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from '../features/notifications/notificationSlice';
+import { getNotifications, getUnreadCount, markAsRead, markAllAsRead, clearNotifications } from '../features/notifications/notificationSlice';
 import type { RootState, AppDispatch } from '../app/store';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -34,6 +34,10 @@ function NotificationDropdown() {
         dispatch(markAllAsRead());
     };
 
+    const handleClearAll = () => {
+        dispatch(clearNotifications());
+    };
+
     const getNotificationIcon = (type: string) => {
         switch (type) {
             case 'ASSIGNED':
@@ -51,7 +55,10 @@ function NotificationDropdown() {
 
     return (
         <Menu as="div" className="relative">
-            <Menu.Button className="relative p-2 text-gray-300 hover:text-white transition">
+            <Menu.Button
+                onClick={handleMarkAllAsRead}
+                className="relative p-2 text-gray-300 hover:text-white transition"
+            >
                 <Bell size={20} />
                 {unreadCount > 0 && (
                     <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-600 rounded-full">
@@ -121,13 +128,13 @@ function NotificationDropdown() {
                     </div>
 
                     {Array.isArray(notifications) && notifications.length > 0 && (
-                        <div className="p-3 border-t border-gray-200 text-center">
-                            <Link
-                                to="/notifications"
-                                className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
+                        <div className="p-3 border-t border-gray-200 flex justify-between items-center">
+                            <button
+                                onClick={handleClearAll}
+                                className="text-sm text-red-600 hover:text-red-700 font-semibold"
                             >
-                                View all notifications
-                            </Link>
+                                Clear All
+                            </button>
                         </div>
                     )}
                 </Menu.Items>
