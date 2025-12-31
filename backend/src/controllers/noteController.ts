@@ -94,7 +94,7 @@ export const addNote = async (req: AuthRequest, res: Response) => {
                 // If user replied, notify the assigned agent
                 if (isStaff && ticket.user) {
                     const ticketOwner = ticket.user as any;
-                    await createNotification(
+                    const notification = await createNotification(
                         ticketOwner._id,
                         ticket._id,
                         'REPLY',
@@ -103,10 +103,13 @@ export const addNote = async (req: AuthRequest, res: Response) => {
 
                     // Notify User via Socket (Instant)
                     const io = SocketManager.getInstance();
-                    io.emitToUser(ticketOwner._id.toString(), 'notification', {
-                        message: `New reply from ${req.user!.name}`,
-                        ticketId: ticket._id.toString()
-                    });
+                    // Send full notification object (after converting to JSON/Object if needed, but mongoose docs are usually fine)
+                    if (notification) {
+                        io.emitToUser(ticketOwner._id.toString(), 'notification', {
+                            ...notification.toObject(),
+                            ticketId: ticket._id.toString() // Keep for compatibility if needed
+                        });
+                    }
 
                     // Send email (Can fail/timeout without blocking notification)
                     await sendEmail({
@@ -121,7 +124,7 @@ export const addNote = async (req: AuthRequest, res: Response) => {
                     });
                 } else if (!isStaff && ticket.assignedTo) {
                     const assignedAgent = ticket.assignedTo as any;
-                    await createNotification(
+                    const notification = await createNotification(
                         assignedAgent._id,
                         ticket._id,
                         'REPLY',
@@ -130,10 +133,12 @@ export const addNote = async (req: AuthRequest, res: Response) => {
 
                     // Notify User via Socket (Instant)
                     const io = SocketManager.getInstance();
-                    io.emitToUser(assignedAgent._id.toString(), 'notification', {
-                        message: `New reply from ${req.user!.name}`,
-                        ticketId: ticket._id.toString()
-                    });
+                    if (notification) {
+                        io.emitToUser(assignedAgent._id.toString(), 'notification', {
+                            ...notification.toObject(),
+                            ticketId: ticket._id.toString()
+                        });
+                    }
 
                     // Send email
                     await sendEmail({

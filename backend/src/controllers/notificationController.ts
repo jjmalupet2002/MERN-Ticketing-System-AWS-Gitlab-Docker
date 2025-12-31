@@ -90,12 +90,13 @@ export const createNotification = async (
     message: string
 ) => {
     try {
-        await Notification.create({
+        const notification = await Notification.create({
             recipient: recipientId,
             ticket: ticketId,
             type,
             message,
         });
+        return notification;
     } catch (error) {
         console.error('Error creating notification:', error);
     }

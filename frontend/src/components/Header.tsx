@@ -30,16 +30,14 @@ function Header() {
                 });
 
                 // Construct a temporary notification object for the UI
-                // Note: In a real app, the socket should probably send the full object
-                // or we fetch the single new notification. For now, we stub it to update UI instantly.
                 const newNotification = {
-                    _id: Date.now().toString(), // Temp ID
+                    _id: data._id || Date.now().toString(), // Use Real ID if available, else temp
                     recipient: user._id,
-                    ticket: { _id: data.ticketId, title: 'New Reply', status: 'open' }, // Simplified
-                    type: 'REPLY',
+                    ticket: { _id: data.ticketId, title: 'Ticket Update', status: 'open' },
+                    type: data.type || 'REPLY',
                     message: data.message,
                     seen: false,
-                    createdAt: new Date().toISOString()
+                    createdAt: data.createdAt || new Date().toISOString()
                 };
 
                 dispatch(addNotification(newNotification));
