@@ -1,6 +1,8 @@
 import nodemailer from 'nodemailer';
 import handlebars from 'handlebars';
 
+
+
 // Create reusable transporter
 const createTransporter = () => {
     // For development, use a test account or configure with real SMTP
@@ -51,7 +53,7 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(`Email sent to ${options.to}`);
+        console.log(`Email sent via SMTP to ${options.to}`);
     } catch (error) {
         console.error('Error sending email:', error);
         // Don't throw error - we don't want email failures to break the app
