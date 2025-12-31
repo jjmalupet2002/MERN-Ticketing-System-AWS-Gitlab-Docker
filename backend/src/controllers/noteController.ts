@@ -78,71 +78,79 @@ export const addNote = async (req: AuthRequest, res: Response) => {
         // Populate the newly added note's author
         await ticket.populate('notes.author', 'name email role');
 
-        // Create notification and send email
-        // If agent/admin replied, notify the ticket owner
-        // If user replied, notify the assigned agent
-        if (isStaff && ticket.user) {
-            const ticketOwner = ticket.user as any;
-            await createNotification(
-                ticketOwner._id,
-                ticket._id,
-                'REPLY',
-                `${req.user!.name} replied to your ticket: ${ticket.title}`
-            );
-
-            // Send email to ticket owner
-            await sendEmail({
-                to: ticketOwner.email,
-                subject: `New reply on ticket #${ticket._id.toString().slice(-6).toUpperCase()}`,
-                html: emailTemplates.ticketReply(
-                    ticket._id.toString().slice(-6).toUpperCase(),
-                    ticket.title,
-                    req.user!.name,
-                    content
-                ),
-            });
-        } else if (!isStaff && ticket.assignedTo) {
-            const assignedAgent = ticket.assignedTo as any;
-            await createNotification(
-                assignedAgent._id,
-                ticket._id,
-                'REPLY',
-                `${req.user!.name} replied to ticket: ${ticket.title}`
-            );
-
-            // Send email to assigned agent
-            await sendEmail({
-                to: assignedAgent.email,
-                subject: `New reply on ticket #${ticket._id.toString().slice(-6).toUpperCase()}`,
-                html: emailTemplates.ticketReply(
-                    ticket._id.toString().slice(-6).toUpperCase(),
-                    ticket.title,
-                    req.user!.name,
-                    content
-                ),
-            });
-        }
-
-        // Notify the recipient via Socket (Red Dot / Toast)
-        const recipientId = (isStaff && ticket.user)
-            ? (ticket.user as any)._id
-            : (!isStaff && ticket.assignedTo)
-                ? (ticket.assignedTo as any)._id
-                : null;
-
-        if (recipientId) {
-            const io = SocketManager.getInstance();
-            io.emitToUser(recipientId.toString(), 'notification', {
-                message: `New reply from ${req.user!.name}`,
-                ticketId: ticket._id.toString()
-            });
-        }
-
         // Socket Event: Real-time Chat
         const io = SocketManager.getInstance();
         io.emitToTicket(req.params.ticketId, 'new_note', ticket.notes[ticket.notes.length - 1]);
 
+        // Send Response immediately for better UX
         res.status(201).json(ticket.notes[ticket.notes.length - 1]);
+
+        // Background Tasks: Notifications & Emails (Don't await these to block response)
+        // We use a non-awaited async immediately invoked function or just let the promise float
+        (async () => {
+            try {
+                // Populate the newly added note's author (already done for response, but needed safe)
+                // If agent/admin replied, notify the ticket owner
+                // If user replied, notify the assigned agent
+                if (isStaff && ticket.user) {
+                    const ticketOwner = ticket.user as any;
+                    await createNotification(
+                        ticketOwner._id,
+                        ticket._id,
+                        'REPLY',
+                        `${req.user!.name} replied to your ticket: ${ticket.title}`
+                    );
+
+                    // Send email to ticket owner
+                    await sendEmail({
+                        to: ticketOwner.email,
+                        subject: `New reply on ticket #${ticket._id.toString().slice(-6).toUpperCase()}`,
+                        html: emailTemplates.ticketReply(
+                            ticket._id.toString().slice(-6).toUpperCase(),
+                            ticket.title,
+                            req.user!.name,
+                            content
+                        ),
+                    });
+                } else if (!isStaff && ticket.assignedTo) {
+                    const assignedAgent = ticket.assignedTo as any;
+                    await createNotification(
+                        assignedAgent._id,
+                        ticket._id,
+                        'REPLY',
+                        `${req.user!.name} replied to ticket: ${ticket.title}`
+                    );
+
+                    // Send email to assigned agent
+                    await sendEmail({
+                        to: assignedAgent.email,
+                        subject: `New reply on ticket #${ticket._id.toString().slice(-6).toUpperCase()}`,
+                        html: emailTemplates.ticketReply(
+                            ticket._id.toString().slice(-6).toUpperCase(),
+                            ticket.title,
+                            req.user!.name,
+                            content
+                        ),
+                    });
+                }
+
+                // Notify the recipient via Socket (Red Dot / Toast)
+                const recipientId = (isStaff && ticket.user)
+                    ? (ticket.user as any)._id
+                    : (!isStaff && ticket.assignedTo)
+                        ? (ticket.assignedTo as any)._id
+                        : null;
+
+                if (recipientId) {
+                    io.emitToUser(recipientId.toString(), 'notification', {
+                        message: `New reply from ${req.user!.name}`,
+                        ticketId: ticket._id.toString()
+                    });
+                }
+            } catch (bgError) {
+                console.error('Background Notification/Email failed:', bgError);
+            }
+        })();
     } catch (error) {
         console.error('Error adding note:', error);
         res.status(500).json({ message: 'Server error' });
