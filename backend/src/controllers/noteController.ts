@@ -101,7 +101,14 @@ export const addNote = async (req: AuthRequest, res: Response) => {
                         `${req.user!.name} replied to your ticket: ${ticket.title}`
                     );
 
-                    // Send email to ticket owner
+                    // Notify User via Socket (Instant)
+                    const io = SocketManager.getInstance();
+                    io.emitToUser(ticketOwner._id.toString(), 'notification', {
+                        message: `New reply from ${req.user!.name}`,
+                        ticketId: ticket._id.toString()
+                    });
+
+                    // Send email (Can fail/timeout without blocking notification)
                     await sendEmail({
                         to: ticketOwner.email,
                         subject: `New reply on ticket #${ticket._id.toString().slice(-6).toUpperCase()}`,
@@ -121,7 +128,14 @@ export const addNote = async (req: AuthRequest, res: Response) => {
                         `${req.user!.name} replied to ticket: ${ticket.title}`
                     );
 
-                    // Send email to assigned agent
+                    // Notify User via Socket (Instant)
+                    const io = SocketManager.getInstance();
+                    io.emitToUser(assignedAgent._id.toString(), 'notification', {
+                        message: `New reply from ${req.user!.name}`,
+                        ticketId: ticket._id.toString()
+                    });
+
+                    // Send email
                     await sendEmail({
                         to: assignedAgent.email,
                         subject: `New reply on ticket #${ticket._id.toString().slice(-6).toUpperCase()}`,
@@ -131,20 +145,6 @@ export const addNote = async (req: AuthRequest, res: Response) => {
                             req.user!.name,
                             content
                         ),
-                    });
-                }
-
-                // Notify the recipient via Socket (Red Dot / Toast)
-                const recipientId = (isStaff && ticket.user)
-                    ? (ticket.user as any)._id
-                    : (!isStaff && ticket.assignedTo)
-                        ? (ticket.assignedTo as any)._id
-                        : null;
-
-                if (recipientId) {
-                    io.emitToUser(recipientId.toString(), 'notification', {
-                        message: `New reply from ${req.user!.name}`,
-                        ticketId: ticket._id.toString()
                     });
                 }
             } catch (bgError) {
