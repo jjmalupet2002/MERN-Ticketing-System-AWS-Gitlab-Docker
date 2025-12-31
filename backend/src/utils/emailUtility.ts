@@ -25,6 +25,14 @@ interface EmailOptions {
 // Send email function
 export const sendEmail = async (options: EmailOptions): Promise<void> => {
     try {
+        // Debug Log (Temporary)
+        console.log('SMTP Config Check:', {
+            Host: process.env.SMTP_HOST,
+            Port: process.env.SMTP_PORT,
+            User: process.env.SMTP_USER ? 'Set' : 'Missing',
+            Pass: process.env.SMTP_PASS ? 'Set' : 'Missing'
+        });
+
         // Skip sending if SMTP credentials are not configured
         if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
             console.log('Email not sent - SMTP credentials not configured');
