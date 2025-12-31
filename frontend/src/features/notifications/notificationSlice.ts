@@ -2,7 +2,9 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import type { RootState } from '../../app/store';
 
-const API_URL = '/api/notifications/';
+const API_URL = import.meta.env.VITE_API_URL
+    ? `${import.meta.env.VITE_API_URL}/api/notifications/`
+    : '/api/notifications/';
 
 export interface Notification {
     _id: string;

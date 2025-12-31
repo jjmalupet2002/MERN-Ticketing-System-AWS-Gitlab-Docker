@@ -13,7 +13,7 @@
    Start all services with hot-reloading:
    ```bash
    docker compose -f docker-compose.dev.yml up --build
-   ```
+   ``` 
    - Frontend: http://localhost:3000
    - Backend: http://localhost:5000
 

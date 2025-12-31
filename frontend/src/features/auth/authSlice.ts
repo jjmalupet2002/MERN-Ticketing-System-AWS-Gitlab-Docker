@@ -28,10 +28,14 @@ const initialState: AuthState = {
     message: '',
 };
 
+const API_URL = import.meta.env.VITE_API_URL
+    ? `${import.meta.env.VITE_API_URL}/api/users`
+    : '/api/users';
+
 // Register user
 export const register = createAsyncThunk('auth/register', async (user: any, thunkAPI) => {
     try {
-        const response = await axios.post('/api/users', user);
+        const response = await axios.post(API_URL, user);
         if (response.data) {
             localStorage.setItem('user', JSON.stringify(response.data));
         }
@@ -45,7 +49,7 @@ export const register = createAsyncThunk('auth/register', async (user: any, thun
 // Login user
 export const login = createAsyncThunk('auth/login', async (user: any, thunkAPI) => {
     try {
-        const response = await axios.post('/api/users/login', user);
+        const response = await axios.post(`${API_URL}/login`, user);
         if (response.data) {
             localStorage.setItem('user', JSON.stringify(response.data));
         }

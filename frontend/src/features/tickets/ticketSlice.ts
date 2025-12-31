@@ -58,7 +58,9 @@ const initialState: TicketState = {
     message: '',
 };
 
-const API_URL = '/api/tickets/';
+const API_URL = import.meta.env.VITE_API_URL
+    ? `${import.meta.env.VITE_API_URL}/api/tickets/`
+    : '/api/tickets/';
 
 // Create new ticket
 export const createTicket = createAsyncThunk('tickets/create', async (ticketData: any, thunkAPI) => {
